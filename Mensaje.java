@@ -15,4 +15,46 @@ public class Mensaje {
         this.tiempoCuarentena = 0;
     }
 
+    
+    public int getIdMensaje() {
+        return idMensaje;
+    }
+    public Tipo getTipo() {
+        return tipo;
+    }
+    public String getIdCliente() {
+        return idCliente;       
+    }
+
+    public void setIdMensaje(int idMensaje) {
+        this.idMensaje = idMensaje;
+    }
+
+    public void setTipo(Tipo tipo) {
+        this.tipo = tipo;
+    }
+
+    public void setIdCliente(String idCliente) {
+        this.idCliente = idCliente;
+    }
+
+    public boolean isEsSpam() {
+        return esSpam;
+    }
+
+    public boolean getEsSpam() {
+        return esSpam;
+    }
+
+    public void setEsSpam(boolean esSpam) {
+        this.esSpam = esSpam;
+    }
+
+    public int getTiempoCuarentena() {
+        return tiempoCuarentena;
+    }
+
+    public void setTiempoCuarentena(int tiempoCuarentena) {
+        this.tiempoCuarentena = tiempoCuarentena;
+    }
 }
