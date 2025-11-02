@@ -25,7 +25,7 @@ public class ClienteEmisor extends Thread {
             int nextId = 0;
 
             // 1. Enviar mensaje de INICIO
-            Mensaje inicio = new Mensaje(Mensaje.Tipo.INICIO, "Cliente" + idCliente, nextId++);
+            Mensaje inicio = new Mensaje(Mensaje.Tipo.INICIO, String.valueOf(idCliente), nextId++);
             buzonEntrada.depositar(inicio);
             System.out.println(getName() + ": Mensaje INICIO enviado");
             
@@ -37,7 +37,7 @@ public class ClienteEmisor extends Thread {
                 
                 Mensaje mensaje = new Mensaje(
                     Mensaje.Tipo.CORREO, 
-                    "Cliente" + idCliente, 
+                    String.valueOf(idCliente), 
                     nextId++, 
                     esSpam
                 );
@@ -51,7 +51,7 @@ public class ClienteEmisor extends Thread {
             }
 
             // 3. Enviar mensaje de FIN
-            Mensaje fin = new Mensaje(Mensaje.Tipo.FIN, "Cliente" + idCliente, nextId++);
+            Mensaje fin = new Mensaje(Mensaje.Tipo.FIN, String.valueOf(idCliente), nextId++);
             buzonEntrada.depositar(fin);
             System.out.println(getName() + ": Mensaje FIN enviado. Total mensajes: " + mensajesGenerados);
 

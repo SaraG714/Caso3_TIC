@@ -21,26 +21,35 @@ public class ServidorEntrega extends Thread {
     @Override
     public void run() {
         try {
+            System.out.println(getName() + " INICIADO - esperando mensajes...");
+            
             while (!terminado) {
-                // ESPERA ACTIVA: el buzón retorna null si vacío
                 Mensaje mensaje = buzonEntrega.retirar();
-                
+    
                 if (mensaje == null) {
-                    // Buzón vacío - espera activa (consultar de nuevo)
-                    Thread.sleep(50); // Pequeña pausa para no saturar CPU
+                    // Si el buzón está cerrado y vacío, terminar
+                    if (buzonEntrega.isCerrado() && buzonEntrega.estaVacio()) {
+                        System.out.println(getName() + ": Buzón cerrado y vacío - Terminando");
+                        terminado = true;
+                        break;
+                    }
+                    // Espera activa corta
+                    Thread.sleep(50);
                     continue;
                 }
-                
+    
                 if (mensaje.getTipo() == Mensaje.Tipo.FIN) {
-                    System.out.println(getName() + ": Recibió FIN - Terminando");
+                    System.out.println("🎯 " + getName() + ": Recibió FIN - Terminando");
                     terminado = true;
-                    buzonEntrega.depositar(mensaje); // Re-depositar para otros servidores
+                    
                     break;
                 } else {
                     procesarMensaje(mensaje);
                 }
             }
+    
             System.out.println(getName() + " ha terminado. Procesó " + mensajesProcesados + " mensajes");
+    
         } catch (InterruptedException e) {
             System.out.println(getName() + " interrumpido");
         }
@@ -49,7 +58,7 @@ public class ServidorEntrega extends Thread {
     private void procesarMensaje(Mensaje mensaje) throws InterruptedException {
         mensajesProcesados++;
         System.out.println(getName() + ": Procesando mensaje " + mensaje.getIdMensaje() + 
-                         " from " + mensaje.getIdCliente());
+                         " de Cliente " + mensaje.getIdCliente());
         
         // Simular tiempo de procesamiento aleatorio
         Random rand = new Random();

@@ -3,11 +3,11 @@ import java.util.LinkedList;
 import java.util.Queue;
 
 public abstract class Buzon {
-    private Queue<Mensaje> cola = new LinkedList<>();
-    private int capacidad; // -1 = ilimitado
+    protected Queue<Mensaje> cola = new LinkedList<>();
+    protected int capacidad; // -1 = ilimitado
     public enum Tipo { ENTRADA, CUARENTENA, ENTREGA }
-    private Tipo tipo;
-    private volatile boolean cerrado = false; 
+    protected Tipo tipo;
+    protected volatile boolean cerrado = false; 
 
 
     public Buzon(Tipo tipo, int capacidad) {
@@ -32,15 +32,18 @@ public abstract class Buzon {
 
     public synchronized Mensaje retirar() throws InterruptedException {
         while (cola.isEmpty() && !cerrado) {
-            wait(); // Espera pasiva si está vacío
+            wait(); // Espera pasiva si está vacío pero aún abierto
         }
+    
+        // Si se cerró y está vacío, no hay más mensajes que procesar
         if (cola.isEmpty() && cerrado) {
             return null;
         }
+    
         Mensaje m = cola.poll();
-        notifyAll(); // Despierta a los productores
+        notifyAll(); // Notificar a productores que hay espacio
         System.out.println("[Buzon " + tipo.toString() + "]: Mensaje retirado -> " + 
-                          m.getTipo() + " from " + m.getIdCliente());
+                           m.getTipo() + " de  Cliente " + m.getIdCliente());
         return m;
     }
 
@@ -55,9 +58,20 @@ public abstract class Buzon {
         }
         cola.add(m);
         System.out.println("[Buzon " + tipo.toString() + "]: Mensaje depositado -> " + 
-                          m.getTipo() + " from " + m.getIdCliente() + 
+                          m.getTipo() + " de Cliente " + m.getIdCliente() + 
                           " (ID: " + m.getIdMensaje() + ")");
         notifyAll();
+    }
+
+    protected synchronized Mensaje retirarSinWait() {
+        if (cola.isEmpty()) {
+            return null; // no bloquea
+        }
+        Mensaje m = cola.poll();
+        notifyAll(); // Despierta a los productores si había límite
+        System.out.println("[Buzon " + tipo.toString() + "]: Mensaje retirado -> " + 
+                          m.getTipo() + " de Cliente " + m.getIdCliente());
+        return m;
     }
 
     public synchronized void cerrar() {
