@@ -1,3 +1,4 @@
+package model;
 public class Mensaje {
     public enum Tipo { INICIO, CORREO, FIN }
 
@@ -13,6 +14,11 @@ public class Mensaje {
         this.idMensaje = idMensaje;
         this.esSpam = esSpam;
         this.tiempoCuarentena = 0;
+    }
+
+    // Constructor para mensajes de control (INICIO/FIN)
+    public Mensaje(Tipo tipo, String idCliente, int idMensaje) {
+        this(tipo, idCliente, idMensaje, false);
     }
 
     
@@ -56,5 +62,16 @@ public class Mensaje {
 
     public void setTiempoCuarentena(int tiempoCuarentena) {
         this.tiempoCuarentena = tiempoCuarentena;
+    }
+
+    @Override
+    public String toString() {
+        return "Mensaje{" +
+                "tipo=" + tipo +
+                ", cliente='" + idCliente + '\'' +
+                ", id=" + idMensaje +
+                ", spam=" + esSpam +
+                ", cuarentena=" + tiempoCuarentena +
+                '}';
     }
 }
