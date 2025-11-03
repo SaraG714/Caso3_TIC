@@ -59,80 +59,94 @@ public class Main {
             // === 5. ESPERAR A QUE LOS CLIENTES TERMINEN ===
             System.out.println("\n⏳ ESPERANDO A QUE CLIENTES TERMINEN...");
             for (Thread cliente : clientes) {
-                cliente.join();  // Espera real a que cada cliente finalice
+                cliente.join();
             }
 
             System.out.println("✅ Todos los clientes terminaron. Cerrando buzón de entrada...");
             buzonEntrada.cerrar();
 
-            // === 6. ESPERAR A QUE FILTROS TERMINEN ===
+            // === 6. ESPERAR A QUE FILTROS TERMINEN NATURALMENTE ===
             System.out.println("\n⏳ ESPERANDO A QUE FILTROS TERMINEN...");
-
-            for (FiltroSpam filtro : filtros) {
-                System.out.println("  - " + filtro.getName() + ": " +
-                        (filtro.isAlive() ? "ACTIVO" : "TERMINADO"));
-                filtro.join(10000); // Espera hasta 8 segundos
-
-                if (filtro.isAlive()) {
-                    System.out.println("⚠️ ERROR: " + filtro.getName() +
-                            " no terminó en tiempo. Interrumpiendo...");
-                    filtro.interrupt();
+            boolean todosFiltrosTerminados = false;
+            int intentosEspera = 0;
+            int maxIntentos = 20;
+            
+            while (!todosFiltrosTerminados && intentosEspera < maxIntentos) {
+                Thread.sleep(1000);
+                intentosEspera++;
+                
+                todosFiltrosTerminados = true;
+                for (FiltroSpam filtro : filtros) {
+                    if (filtro.isAlive()) {
+                        todosFiltrosTerminados = false;
+                        System.out.println("Estado filtros: " + FiltroSpam.getEstado() + 
+                                         " - Intento " + intentosEspera + "/" + maxIntentos);
+                        break;
+                    }
                 }
             }
 
-            // === 7. SI LOS FILTROS NO TERMINAN, FORZAR FIN DEL SISTEMA ===
-            if (!FiltroSpam.isSistemaCompletamenteTerminado()) {
-                System.out.println("🚨 Forzando terminación del sistema...");
-                try {
-                    Mensaje finSistema = new Mensaje(Mensaje.Tipo.FIN, "SISTEMA", -1);
-                    buzonEntrega.depositar(finSistema);
-                    buzonCuarentena.depositar(finSistema);
-                } catch (InterruptedException e) {
-                    System.out.println("Error forzando terminación: " + e.getMessage());
-                }
+            if (!todosFiltrosTerminados) {
+                System.out.println("🚨 Algunos filtros no terminaron automáticamente");
             } else {
-                System.out.println("✅ Los filtros terminaron automáticamente");
+                System.out.println("✅ Todos los filtros terminaron automáticamente");
             }
 
-            // Dar tiempo para que los FIN se depositen y procesen
+            // === 7. ESTRATEGIA DE TERMINACIÓN MEJORADA ===
+            System.out.println("\n🔁 INICIANDO ESTRATEGIA DE TERMINACIÓN MEJORADA...");
+            
+            // Dar tiempo para que el FIN se procese
             Thread.sleep(2000);
             
-            // Esperar a que el buzón de entrega se vacíe (servidores procesan FIN)
-            // O cerrarlo si aún tiene mensajes después de un tiempo
-            int intentos = 0;
-            while (!buzonEntrega.estaVacio() && intentos < 10) {
-                Thread.sleep(500);
-                intentos++;
+            // Si los servidores no han recibido FIN todavía, depositar FIN adicional
+            if (!ServidorEntrega.isFinGlobalRecibido()) {
+                System.out.println("🔄 Depositando FIN adicional para servidores...");
+                try {
+                    Mensaje finAdicional = new Mensaje(Mensaje.Tipo.FIN, "SISTEMA", -2);
+                    buzonEntrega.depositar(finAdicional);
+                } catch (InterruptedException e) {
+                    System.out.println("Error depositando FIN adicional: " + e.getMessage());
+                }
             }
-            
-            // Cerrar buzones para permitir que servidores y manejador terminen
-            // (aunque aún tengan mensajes, cerrar permite que retirar() funcione normalmente
-            // y solo devuelva null cuando esté vacío)
+
+            // Esperar un poco más
+            Thread.sleep(2000);
+
+            // === 8. CERRAR BUZONES ===
             System.out.println("🔒 Cerrando buzón de entrega...");
             buzonEntrega.cerrar();
             System.out.println("🔒 Cerrando buzón de cuarentena...");
             buzonCuarentena.cerrar();
 
-            // === 8. FINALIZAR MANEJADOR DE CUARENTENA ===
-            System.out.println("\n🟣 TERMINANDO MANEJADOR DE CUARENTENA...");
-            manejadorCuarentena.solicitarTerminacion();
-            manejadorCuarentena.join(3000);
-
-            // === 9. ESPERAR A QUE SERVIDORES TERMINEN ===
+            // === 9. ESPERAR TERMINACIÓN NATURAL ===
             System.out.println("\n🟢 ESPERANDO A QUE SERVIDORES TERMINEN...");
+            boolean todosServidoresTerminados = true;
             for (ServidorEntrega servidor : servidores) {
-                servidor.join(5000);
+                servidor.join(3000);
                 if (servidor.isAlive()) {
-                    System.out.println("⚠️ " + servidor.getName() +
-                            " no terminó, forzando terminación...");
+                    todosServidoresTerminados = false;
+                    System.out.println("⚠️ " + servidor.getName() + " no terminó en tiempo");
                     servidor.solicitarTerminacion();
+                    servidor.join(1000);
                 }
+            }
+
+            if (todosServidoresTerminados) {
+                System.out.println("✅ Todos los servidores terminaron correctamente");
+            }
+
+            System.out.println("\n🟣 ESPERANDO A QUE MANEJADOR TERMINE...");
+            manejadorCuarentena.join(2000);
+            if (manejadorCuarentena.isAlive()) {
+                System.out.println("⚠️ ManejadorCuarentena no terminó en tiempo");
+                manejadorCuarentena.solicitarTerminacion();
             }
 
             // === 10. ESTADÍSTICAS FINALES ===
             System.out.println("\n========== ESTADÍSTICAS FINALES ==========");
             System.out.println("📦 Buzón entrada vacío: " + buzonEntrada.estaVacio());
             System.out.println("📦 Buzón cuarentena vacío: " + buzonCuarentena.estaVacio());
+            System.out.println("📦 Buzón entrega vacío: " + buzonEntrega.estaVacio());
             System.out.println("📦 Buzón entrega (pendientes): " + buzonEntrega.getSize());
 
             int totalMensajesServidores = 0;
@@ -140,8 +154,35 @@ public class Main {
                 totalMensajesServidores += servidor.getMensajesProcesados();
             }
             System.out.println("✉️ Total mensajes procesados por servidores: " + totalMensajesServidores);
+            System.out.println("📊 Total mensajes esperados: " + (numClientes * mensajesPorCliente));
+            System.out.println("🗑️ Mensajes spam descartados: " + ManejadorCuarentena.getMensajesDescartados());
+           
 
-            System.out.println("\n✅✅ SISTEMA COMPLETAMENTE TERMINADO ✅✅");
+            // Verificar terminación completa
+            boolean sistemaCompletamenteTerminado = true;
+            for (ServidorEntrega servidor : servidores) {
+                if (servidor.isAlive()) {
+                    sistemaCompletamenteTerminado = false;
+                    System.out.println("❌ " + servidor.getName() + " aún está activo");
+                }
+            }
+            if (manejadorCuarentena.isAlive()) {
+                sistemaCompletamenteTerminado = false;
+                System.out.println("❌ ManejadorCuarentena aún está activo");
+            }
+            for (FiltroSpam filtro : filtros) {
+                if (filtro.isAlive()) {
+                    sistemaCompletamenteTerminado = false;
+                    System.out.println("❌ " + filtro.getName() + " aún está activo");
+                }
+            }
+
+            if (sistemaCompletamenteTerminado) {
+                System.out.println("\n✅✅ SISTEMA COMPLETAMENTE TERMINADO ✅✅");
+            } else {
+                System.out.println("\n⚠️⚠️ SISTEMA PARCIALMENTE TERMINADO ⚠️⚠️");
+                System.out.println("(Esto puede ser aceptable si todos los buzones están vacíos)");
+            }
 
         } catch (InterruptedException e) {
             System.out.println("Error de interrupción en el flujo principal: " + e.getMessage());

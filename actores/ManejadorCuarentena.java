@@ -8,6 +8,7 @@ public class ManejadorCuarentena extends Thread {
     private BuzonCuarentena buzonCuarentena;
     private BuzonEntrega buzonEntrega;
     private volatile boolean terminado;
+    private static int mensajesDescartados = 0; // Contador de mensajes spam descartados
 
     public ManejadorCuarentena(BuzonCuarentena buzonCuarentena, BuzonEntrega buzonEntrega) {
         this.buzonCuarentena = buzonCuarentena;
@@ -39,7 +40,7 @@ public class ManejadorCuarentena extends Thread {
                 
                 // Verificar si es mensaje FIN
                 if (mensaje.getTipo() == Mensaje.Tipo.FIN) {
-                    System.out.println("🎯 " + getName() + ": Recibió FIN - Terminando");
+                    System.out.println(getName() + ": Recibió FIN - Terminando");
                     terminado = true;
                     
                     break;
@@ -74,6 +75,9 @@ public class ManejadorCuarentena extends Thread {
         boolean esMalicioso = (numeroAleatorio % 7 == 0);
         
         if (esMalicioso) {
+            synchronized (ManejadorCuarentena.class) {
+                mensajesDescartados++;
+            }
             System.out.println("🟣 " + getName() + ": Mensaje " + mensaje.getIdMensaje() + 
                              " DESCARTADO (malicioso)");
             // No se re-deposita - se descarta permanentemente
@@ -93,5 +97,10 @@ public class ManejadorCuarentena extends Thread {
     public void solicitarTerminacion() {
         this.terminado = true;
         this.interrupt();
+    }
+    
+    // Método estático para obtener el contador de mensajes descartados
+    public static int getMensajesDescartados() {
+        return mensajesDescartados;
     }
 }
