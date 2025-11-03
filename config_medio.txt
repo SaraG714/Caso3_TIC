@@ -1,0 +1,7 @@
+# Configuración media para pruebas normales
+numClientes=5
+mensajesPorCliente=10
+numFiltros=2
+numServidores=2
+capacidadEntrada=8
+capacidadEntrega=6

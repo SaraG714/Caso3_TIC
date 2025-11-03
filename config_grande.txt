@@ -1,0 +1,7 @@
+# Configuración grande para pruebas de estrés
+numClientes=10
+mensajesPorCliente=20
+numFiltros=3
+numServidores=4
+capacidadEntrada=15
+capacidadEntrega=10

@@ -4,7 +4,7 @@ import java.util.Queue;
 
 public abstract class Buzon {
     protected Queue<Mensaje> cola = new LinkedList<>();
-    protected int capacidad; // -1 = ilimitado
+    protected int capacidad; //-1 ilimitado
     public enum Tipo { ENTRADA, CUARENTENA, ENTREGA }
     protected Tipo tipo;
     protected volatile boolean cerrado = false; 
@@ -19,36 +19,33 @@ public abstract class Buzon {
         if (cerrado) {
             throw new IllegalStateException("Buzon cerrado");
         }
-        // Para capacidad ilimitada (capacidad = -1), no hacemos wait
         while (capacidad > 0 && cola.size() >= capacidad) {
-            wait(); // Espera pasiva si está lleno
+            wait();
         }
         cola.add(m);
         System.out.println("[Buzon " + tipo.toString() + "]: Mensaje depositado -> " + 
                           m.getTipo() + " from " + m.getIdCliente() + 
                           " (ID: " + m.getIdMensaje() + ")");
-        notifyAll(); // Despierta a los consumidores
+        notifyAll();
     }
 
     public synchronized Mensaje retirar() throws InterruptedException {
         while (cola.isEmpty() && !cerrado) {
-            wait(); // Espera pasiva si está vacío pero aún abierto
+            wait();
         }
     
-        // Si se cerró y está vacío, no hay más mensajes que procesar
         if (cola.isEmpty() && cerrado) {
             return null;
         }
     
         Mensaje m = cola.poll();
-        notifyAll(); // Notificar a productores que hay espacio
+        notifyAll();
         System.out.println("[Buzon " + tipo.toString() + "]: Mensaje retirado -> " + 
-                           m.getTipo() + " de  Cliente " + m.getIdCliente());
+                           m.getTipo() + " de Cliente " + m.getIdCliente());
         return m;
     }
 
 
-    // Método base sin wait() para que lo usen las subclases
     protected synchronized void depositarSinWait(Mensaje m) {
         if (cerrado) {
             throw new IllegalStateException("Buzón cerrado");
@@ -65,10 +62,10 @@ public abstract class Buzon {
 
     protected synchronized Mensaje retirarSinWait() {
         if (cola.isEmpty()) {
-            return null; // no bloquea
+            return null;
         }
         Mensaje m = cola.poll();
-        notifyAll(); // Despierta a los productores si había límite
+        notifyAll();
         System.out.println("[Buzon " + tipo.toString() + "]: Mensaje retirado -> " + 
                           m.getTipo() + " de Cliente " + m.getIdCliente());
         return m;
@@ -76,8 +73,8 @@ public abstract class Buzon {
 
     public synchronized void cerrar() {
         this.cerrado = true;
-        notifyAll(); // Despertar a TODOS los threads que estén esperando en wait()
-        System.out.println("[Buzon " + tipo.toString() + "]: CERRADO - No acepta más mensajes");
+        notifyAll();
+        System.out.println("[Buzon " + tipo.toString() + "]: CERRADO - No acepta mas mensajes");
     }
 
     public synchronized boolean estaVacio() {

@@ -1,0 +1,7 @@
+# Configuración con límites estrechos
+numClientes=3
+mensajesPorCliente=8
+numFiltros=1
+numServidores=1
+capacidadEntrada=2
+capacidadEntrega=2

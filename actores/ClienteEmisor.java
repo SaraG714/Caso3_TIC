@@ -24,15 +24,10 @@ public class ClienteEmisor extends Thread {
 
             int nextId = 0;
 
-            // 1. Enviar mensaje de INICIO
             Mensaje inicio = new Mensaje(Mensaje.Tipo.INICIO, String.valueOf(idCliente), nextId++);
             buzonEntrada.depositar(inicio);
-            System.out.println(getName() + ": Mensaje INICIO enviado");
-            
 
-            // 2. Generar mensajes normales
             for (int i = 0; i < totalMensajes; i++) {
-                // Generar aleatoriamente si es spam (30% de probabilidad)
                 boolean esSpam = Math.random() < 0.3;
                 
                 Mensaje mensaje = new Mensaje(
@@ -44,16 +39,11 @@ public class ClienteEmisor extends Thread {
                 
                 buzonEntrada.depositar(mensaje);
                 mensajesGenerados++;
-                System.out.println(getName() + ": Mensaje " + i + " enviado (spam: " + esSpam + ")");
-                
-                // Pequeña pausa entre mensajes para simular producción
                 Thread.sleep((long) (Math.random() * 100));
             }
 
-            // 3. Enviar mensaje de FIN
             Mensaje fin = new Mensaje(Mensaje.Tipo.FIN, String.valueOf(idCliente), nextId++);
             buzonEntrada.depositar(fin);
-            System.out.println(getName() + ": Mensaje FIN enviado. Total mensajes: " + mensajesGenerados);
 
         } catch (InterruptedException e) {
             System.out.println(getName() + " interrumpido");

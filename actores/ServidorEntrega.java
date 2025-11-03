@@ -22,14 +22,11 @@ public class ServidorEntrega extends Thread {
     @Override
     public void run() {
         try {
-            System.out.println(getName() + " INICIADO - esperando mensajes...");
-            
             while (!terminado && !finGlobalRecibido) {
                 Mensaje mensaje = buzonEntrega.retirar();
     
                 if (mensaje == null) {
                     if (buzonEntrega.isCerrado()) {
-                        System.out.println(getName() + ": Buzón cerrado y vacío - Terminando");
                         terminado = true;
                         break;
                     }
@@ -38,17 +35,15 @@ public class ServidorEntrega extends Thread {
                 }
     
                 if (mensaje.getTipo() == Mensaje.Tipo.FIN) {
-                    System.out.println("🎯 " + getName() + ": Recibió FIN - Terminando INMEDIATAMENTE");
                     finGlobalRecibido = true;
                     terminado = true;
-                    // NO re-depositar el FIN
                     break;
                 } else {
                     procesarMensaje(mensaje);
                 }
             }
     
-            System.out.println(getName() + " ha terminado. Procesó " + mensajesProcesados + " mensajes");
+            System.out.println(getName() + " terminado. Proceso " + mensajesProcesados + " mensaje(s)");
     
         } catch (InterruptedException e) {
             System.out.println(getName() + " interrumpido");
@@ -57,16 +52,9 @@ public class ServidorEntrega extends Thread {
 
     private void procesarMensaje(Mensaje mensaje) throws InterruptedException {
         mensajesProcesados++;
-        System.out.println(getName() + ": Procesando mensaje " + mensaje.getIdMensaje() + 
-                         " de Cliente " + mensaje.getIdCliente());
-        
-        // Simular tiempo de procesamiento aleatorio (más corto para pruebas)
         Random rand = new Random();
-        int tiempoProcesamiento = 200 + rand.nextInt(300); // 0.2 - 0.5 segundos para pruebas
+        int tiempoProcesamiento = 200 + rand.nextInt(300);
         Thread.sleep(tiempoProcesamiento);
-        
-        System.out.println(getName() + ": Mensaje " + mensaje.getIdMensaje() + 
-                         " procesado (" + tiempoProcesamiento + "ms)");
     }
 
     public void solicitarTerminacion() {

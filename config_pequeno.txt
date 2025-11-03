@@ -1,0 +1,7 @@
+# Configuración pequeña para pruebas básicas
+numClientes=2
+mensajesPorCliente=5
+numFiltros=1
+numServidores=1
+capacidadEntrada=3
+capacidadEntrega=2

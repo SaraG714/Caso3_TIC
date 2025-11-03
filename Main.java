@@ -10,45 +10,61 @@ import model.Mensaje;
 public class Main {
 
     public static void main(String[] args) {
-        // === CONFIGURACIÓN GENERAL ===
-        int numClientes = 5;
-        int mensajesPorCliente = 10;
-        int numFiltros = 1;
-        int numServidores = 1;
-        int capacidadEntrada = 10;
-        int capacidadEntrega = 8;
+        if (args.length < 1) {
+            System.out.println("Uso: java Main <archivo_configuracion>");
+            System.out.println("Ejemplo: java Main config.txt");
+            System.exit(1);
+        }
 
-        System.out.println("\n========== INICIANDO SISTEMA DE MENSAJERÍA ==========\n");
+        String archivoConfig = args[0];
 
-        // === CREAR BUZONES ===
+        try {
+            Configuracion config = new Configuracion(archivoConfig);
+            config.mostrarConfiguracion();
+
+            int numClientes = config.getNumClientes();
+            int mensajesPorCliente = config.getMensajesPorCliente();
+            int numFiltros = config.getNumFiltros();
+            int numServidores = config.getNumServidores();
+            int capacidadEntrada = config.getCapacidadEntrada();
+            int capacidadEntrega = config.getCapacidadEntrega();
+
+            ejecutarSistema(numClientes, mensajesPorCliente, numFiltros, numServidores, 
+                           capacidadEntrada, capacidadEntrega);
+
+        } catch (Exception e) {
+            System.out.println("Error: " + e.getMessage());
+            e.printStackTrace();
+        }
+    }
+
+    public static void ejecutarSistema(int numClientes, int mensajesPorCliente, int numFiltros,
+                                     int numServidores, int capacidadEntrada, int capacidadEntrega) {
+        System.out.println("\n========== INICIANDO SISTEMA DE MENSAJERIA ==========\n");
+
         BuzonEntrada buzonEntrada = new BuzonEntrada(capacidadEntrada);
         BuzonEntrega buzonEntrega = new BuzonEntrega(capacidadEntrega);
         BuzonCuarentena buzonCuarentena = new BuzonCuarentena();
 
-        // === 1. CREAR E INICIAR CLIENTES ===
-        System.out.println("🔵 INICIANDO CLIENTES...");
+        System.out.println("- Iniciando " + numClientes + " clientes...");
         Thread[] clientes = new Thread[numClientes];
-
         for (int i = 0; i < numClientes; i++) {
             clientes[i] = new ClienteEmisor(i + 1, buzonEntrada, mensajesPorCliente);
             clientes[i].start();
         }
 
-        // === 2. CREAR E INICIAR MANEJADOR DE CUARENTENA ===
-        System.out.println("🟣 INICIANDO MANEJADOR DE CUARENTENA...");
+        System.out.println("- Iniciando manejador de cuarentena...");
         ManejadorCuarentena manejadorCuarentena = new ManejadorCuarentena(buzonCuarentena, buzonEntrega);
         manejadorCuarentena.start();
 
-        // === 3. CREAR E INICIAR FILTROS SPAM ===
-        System.out.println("🟠 INICIANDO FILTROS SPAM...");
+        System.out.println("- Iniciando " + numFiltros + " filtros spam...");
         FiltroSpam[] filtros = new FiltroSpam[numFiltros];
         for (int i = 0; i < numFiltros; i++) {
             filtros[i] = new FiltroSpam(i, buzonEntrada, buzonEntrega, buzonCuarentena, numClientes);
             filtros[i].start();
         }
 
-        // === 4. CREAR E INICIAR SERVIDORES DE ENTREGA ===
-        System.out.println("🟢 INICIANDO SERVIDORES DE ENTREGA...");
+        System.out.println("- Iniciando " + numServidores + " servidores de entrega...");
         ServidorEntrega[] servidores = new ServidorEntrega[numServidores];
         for (int i = 0; i < numServidores; i++) {
             servidores[i] = new ServidorEntrega(i, buzonEntrega);
@@ -56,17 +72,15 @@ public class Main {
         }
 
         try {
-            // === 5. ESPERAR A QUE LOS CLIENTES TERMINEN ===
-            System.out.println("\n⏳ ESPERANDO A QUE CLIENTES TERMINEN...");
+            System.out.println("\n- Esperando que clientes terminen...");
             for (Thread cliente : clientes) {
                 cliente.join();
             }
 
-            System.out.println("✅ Todos los clientes terminaron. Cerrando buzón de entrada...");
+            System.out.println("• Clientes terminaron. Cerrando buzón de entrada...");
             buzonEntrada.cerrar();
 
-            // === 6. ESPERAR A QUE FILTROS TERMINEN NATURALMENTE ===
-            System.out.println("\n⏳ ESPERANDO A QUE FILTROS TERMINEN...");
+            System.out.println("\n- Esperando que filtros terminen...");
             boolean todosFiltrosTerminados = false;
             int intentosEspera = 0;
             int maxIntentos = 20;
@@ -79,28 +93,14 @@ public class Main {
                 for (FiltroSpam filtro : filtros) {
                     if (filtro.isAlive()) {
                         todosFiltrosTerminados = false;
-                        System.out.println("Estado filtros: " + FiltroSpam.getEstado() + 
-                                         " - Intento " + intentosEspera + "/" + maxIntentos);
                         break;
                     }
                 }
             }
 
-            if (!todosFiltrosTerminados) {
-                System.out.println("🚨 Algunos filtros no terminaron automáticamente");
-            } else {
-                System.out.println("✅ Todos los filtros terminaron automáticamente");
-            }
-
-            // === 7. ESTRATEGIA DE TERMINACIÓN MEJORADA ===
-            System.out.println("\n🔁 INICIANDO ESTRATEGIA DE TERMINACIÓN MEJORADA...");
-            
-            // Dar tiempo para que el FIN se procese
             Thread.sleep(2000);
             
-            // Si los servidores no han recibido FIN todavía, depositar FIN adicional
             if (!ServidorEntrega.isFinGlobalRecibido()) {
-                System.out.println("🔄 Depositando FIN adicional para servidores...");
                 try {
                     Mensaje finAdicional = new Mensaje(Mensaje.Tipo.FIN, "SISTEMA", -2);
                     buzonEntrega.depositar(finAdicional);
@@ -109,83 +109,70 @@ public class Main {
                 }
             }
 
-            // Esperar un poco más
             Thread.sleep(2000);
 
-            // === 8. CERRAR BUZONES ===
-            System.out.println("🔒 Cerrando buzón de entrega...");
+            System.out.println("- Cerrando buzones...");
             buzonEntrega.cerrar();
-            System.out.println("🔒 Cerrando buzón de cuarentena...");
             buzonCuarentena.cerrar();
 
-            // === 9. ESPERAR TERMINACIÓN NATURAL ===
-            System.out.println("\n🟢 ESPERANDO A QUE SERVIDORES TERMINEN...");
+            System.out.println("\n- Esperando que servidores terminen...");
             boolean todosServidoresTerminados = true;
             for (ServidorEntrega servidor : servidores) {
                 servidor.join(3000);
                 if (servidor.isAlive()) {
                     todosServidoresTerminados = false;
-                    System.out.println("⚠️ " + servidor.getName() + " no terminó en tiempo");
                     servidor.solicitarTerminacion();
                     servidor.join(1000);
                 }
             }
 
-            if (todosServidoresTerminados) {
-                System.out.println("✅ Todos los servidores terminaron correctamente");
-            }
-
-            System.out.println("\n🟣 ESPERANDO A QUE MANEJADOR TERMINE...");
+            System.out.println("- Esperando que manejador termine...");
             manejadorCuarentena.join(2000);
             if (manejadorCuarentena.isAlive()) {
-                System.out.println("⚠️ ManejadorCuarentena no terminó en tiempo");
                 manejadorCuarentena.solicitarTerminacion();
             }
 
-            // === 10. ESTADÍSTICAS FINALES ===
-            System.out.println("\n========== ESTADÍSTICAS FINALES ==========");
-            System.out.println("📦 Buzón entrada vacío: " + buzonEntrada.estaVacio());
-            System.out.println("📦 Buzón cuarentena vacío: " + buzonCuarentena.estaVacio());
-            System.out.println("📦 Buzón entrega vacío: " + buzonEntrega.estaVacio());
-            System.out.println("📦 Buzón entrega (pendientes): " + buzonEntrega.getSize());
-
-            int totalMensajesServidores = 0;
-            for (ServidorEntrega servidor : servidores) {
-                totalMensajesServidores += servidor.getMensajesProcesados();
-            }
-            System.out.println("✉️ Total mensajes procesados por servidores: " + totalMensajesServidores);
-            System.out.println("📊 Total mensajes esperados: " + (numClientes * mensajesPorCliente));
-            System.out.println("🗑️ Mensajes spam descartados: " + ManejadorCuarentena.getMensajesDescartados());
-           
-
-            // Verificar terminación completa
-            boolean sistemaCompletamenteTerminado = true;
-            for (ServidorEntrega servidor : servidores) {
-                if (servidor.isAlive()) {
-                    sistemaCompletamenteTerminado = false;
-                    System.out.println("❌ " + servidor.getName() + " aún está activo");
-                }
-            }
-            if (manejadorCuarentena.isAlive()) {
-                sistemaCompletamenteTerminado = false;
-                System.out.println("❌ ManejadorCuarentena aún está activo");
-            }
-            for (FiltroSpam filtro : filtros) {
-                if (filtro.isAlive()) {
-                    sistemaCompletamenteTerminado = false;
-                    System.out.println("❌ " + filtro.getName() + " aún está activo");
-                }
-            }
-
-            if (sistemaCompletamenteTerminado) {
-                System.out.println("\n✅✅ SISTEMA COMPLETAMENTE TERMINADO ✅✅");
-            } else {
-                System.out.println("\n⚠️⚠️ SISTEMA PARCIALMENTE TERMINADO ⚠️⚠️");
-                System.out.println("(Esto puede ser aceptable si todos los buzones están vacíos)");
-            }
+            generarEstadisticasFinales(buzonEntrada, buzonCuarentena, buzonEntrega, 
+                                     servidores, numClientes, mensajesPorCliente);
 
         } catch (InterruptedException e) {
             System.out.println("Error de interrupción en el flujo principal: " + e.getMessage());
+        }
+    }
+
+    private static void generarEstadisticasFinales(BuzonEntrada buzonEntrada, BuzonCuarentena buzonCuarentena,
+                                                  BuzonEntrega buzonEntrega, ServidorEntrega[] servidores,
+                                                  int numClientes, int mensajesPorCliente) {
+        System.out.println("\n========== ESTADISTICAS FINALES ==========");
+        System.out.println("- Buzon entrada vacio: " + buzonEntrada.estaVacio());
+        System.out.println("- Buzon cuarentena vacio: " + buzonCuarentena.estaVacio());
+        System.out.println("- Buzon entrega vacio: " + buzonEntrega.estaVacio());
+        System.out.println("- Buzon entrega (pendientes): " + buzonEntrega.getSize());
+
+        int totalMensajesServidores = 0;
+        for (ServidorEntrega servidor : servidores) {
+            totalMensajesServidores += servidor.getMensajesProcesados();
+        }
+        System.out.println("- Total mensajes procesados: " + totalMensajesServidores);
+        System.out.println("- Total mensajes esperados: " + (numClientes * mensajesPorCliente));
+        System.out.println("- Mensajes spam descartados: " + ManejadorCuarentena.getMensajesDescartados());
+        
+        boolean sistemaCompletamenteTerminado = true;
+        for (ServidorEntrega servidor : servidores) {
+            if (servidor.isAlive()) {
+                sistemaCompletamenteTerminado = false;
+                System.out.println("- " + servidor.getName() + " aun esta activo");
+            }
+        }
+
+        if (sistemaCompletamenteTerminado && buzonEntrada.estaVacio() && 
+            buzonCuarentena.estaVacio() && buzonEntrega.estaVacio()) {
+            System.out.println("\n• Sistema completamente terminado");
+        } else {
+            System.out.println("\n- Sistema parcialmente terminado");
+            if (!buzonEntrada.estaVacio()) System.out.println("  * Buzon entrada no vacio");
+            if (!buzonCuarentena.estaVacio()) System.out.println("  * Buzon cuarentena no vacio");
+            if (!buzonEntrega.estaVacio()) System.out.println("  * Buzon entrega no vacio");
         }
     }
 }

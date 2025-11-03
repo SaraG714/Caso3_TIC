@@ -13,7 +13,6 @@ public class FiltroSpam extends Thread {
     private BuzonCuarentena buzonCuarentena;
     private int totalClientes;
     
-    // Variables COMPARTIDAS entre todos los filtros
     private static volatile boolean sistemaTerminado = false;
     private static volatile boolean finEnviado = false;
     private static Set<String> clientesTerminados = new HashSet<>();
@@ -34,18 +33,14 @@ public class FiltroSpam extends Thread {
                 Mensaje mensaje = buzonEntrada.retirar();
 
                 if (mensaje == null) {
-                    // Buzón vacío - verificar si podemos terminar
                     if (buzonEntrada.isCerrado()) {
-                        // Buzón cerrado y vacío - verificar condiciones finales
                         verificarYEnviarFin();
                         if (sistemaTerminado) {
                             break;
                         } else {
-                            // Esperar un poco antes de verificar nuevamente
                             Thread.sleep(500);
                         }
                     } else {
-                        // Buzón vacío pero abierto - verificar y continuar
                         verificarYEnviarFin();
                         if (sistemaTerminado) {
                             break;
@@ -56,9 +51,9 @@ public class FiltroSpam extends Thread {
                     procesarMensaje(mensaje);
                 }
             }
-            System.out.println(getName() + " TERMINADO correctamente");
+            System.out.println(getName() + " terminado");
         } catch (InterruptedException e) {
-            System.out.println(getName() + " ❌ INTERRUMPIDO mientras esperaba");
+            System.out.println(getName() + " interrumpido");
         }
     }
 
@@ -82,28 +77,20 @@ public class FiltroSpam extends Thread {
                 procesarCorreo(mensaje);
                 break;
         }
-        
-        // Verificar después de procesar CUALQUIER mensaje
         verificarYEnviarFin();
     }
 
     private void procesarCorreo(Mensaje mensaje) throws InterruptedException {
-        System.out.println(getName() + ": Analizando mensaje " + mensaje.getIdMensaje() + 
-                         " de Cliente" + mensaje.getIdCliente());
-        
         if (mensaje.isEsSpam()) {
-            // SPAM -> a cuarentena
             Random rand = new Random();
-            int tiempoCuarentena = 3 + rand.nextInt(3); // 3-5 segundos
+            int tiempoCuarentena = 3 + rand.nextInt(3);
             mensaje.setTiempoCuarentena(tiempoCuarentena);
-            
             buzonCuarentena.depositar(mensaje);
             System.out.println(getName() + ": SPAM a cuarentena - Mensaje " + 
                              mensaje.getIdMensaje() + " (" + tiempoCuarentena + "s)");
         } else {
-            // VÁLIDO -> a entrega
             buzonEntrega.depositar(mensaje);
-            System.out.println(getName() + ": VÁLIDO a entrega - Mensaje " + mensaje.getIdMensaje());
+            System.out.println(getName() + ": VALIDO a entrega - Mensaje " + mensaje.getIdMensaje());
         }
     }
 
@@ -121,23 +108,18 @@ public class FiltroSpam extends Thread {
             boolean entradaVacia = buzonEntrada.estaVacio();
             boolean cuarentenaVacia = buzonCuarentena.estaVacio();
             
-            System.out.println(getName() + " verificando terminación: " +
-                             "FINs=" + clientesTerminados.size() + "/" + totalClientes +
-                             ", entradaVacia=" + entradaVacia +
-                             ", cuarentenaVacia=" + cuarentenaVacia);
-            
             if (todosFinRecibidos && entradaVacia && cuarentenaVacia) {
                 finEnviado = true;
                 sistemaTerminado = true;
-                                
+                
                 try {
                     Mensaje finSistema = new Mensaje(Mensaje.Tipo.FIN, "SISTEMA", -1);
                     buzonEntrega.depositar(finSistema);
                     buzonCuarentena.depositar(finSistema);
-                    System.out.println("✅ FIN: " + getName() + " envió FIN a buzón de entrega y cuarentena");
+                    System.out.println("• " + getName() + " envio FIN a buzones");
                     Thread.sleep(100);
                 } catch (InterruptedException e) {
-                    System.out.println("❌ Error enviando FIN: " + e.getMessage());
+                    System.out.println("Error enviando FIN: " + e.getMessage());
                 }
             }
         }
@@ -147,7 +129,6 @@ public class FiltroSpam extends Thread {
         return sistemaTerminado && finEnviado;
     }
     
-    // Método para ver el estado actual (para debugging)
     public static String getEstado() {
         return "FINs: " + clientesTerminados.size() + ", sistemaTerminado: " + sistemaTerminado + ", finEnviado: " + finEnviado;
     }
