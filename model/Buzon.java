@@ -29,46 +29,9 @@ public abstract class Buzon {
         notifyAll();
     }
 
-    public synchronized Mensaje retirar() throws InterruptedException {
-        while (cola.isEmpty() && !cerrado) {
-            wait();
-        }
-    
-        if (cola.isEmpty() && cerrado) {
-            return null;
-        }
-    
-        Mensaje m = cola.poll();
-        notifyAll();
-        System.out.println("[Buzon " + tipo.toString() + "]: Mensaje retirado -> " + 
-                           m.getTipo() + " de Cliente " + m.getIdCliente());
-        return m;
-    }
-
-
-    protected synchronized void depositarSinWait(Mensaje m) {
-        if (cerrado) {
-            throw new IllegalStateException("Buzón cerrado");
-        }
-        if (capacidad > 0 && cola.size() >= capacidad) {
-            throw new IllegalStateException("Buzón lleno");
-        }
-        cola.add(m);
-        System.out.println("[Buzon " + tipo.toString() + "]: Mensaje depositado -> " + 
-                          m.getTipo() + " de Cliente " + m.getIdCliente() + 
-                          " (ID: " + m.getIdMensaje() + ")");
-        notifyAll();
-    }
-
-    protected synchronized Mensaje retirarSinWait() {
-        if (cola.isEmpty()) {
-            return null;
-        }
-        Mensaje m = cola.poll();
-        notifyAll();
-        System.out.println("[Buzon " + tipo.toString() + "]: Mensaje retirado -> " + 
-                          m.getTipo() + " de Cliente " + m.getIdCliente());
-        return m;
+    public Mensaje retirar() throws InterruptedException {
+        // TODO Auto-generated method stub
+        throw new UnsupportedOperationException("Unimplemented method 'retirar'");
     }
 
     public synchronized void cerrar() {
@@ -92,4 +55,5 @@ public abstract class Buzon {
     public boolean isCerrado() {
         return cerrado;
     }
+
 }
