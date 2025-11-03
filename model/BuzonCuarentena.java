@@ -9,15 +9,22 @@ public class BuzonCuarentena extends Buzon {
     @Override
     public void depositar(Mensaje m) throws InterruptedException {
         // ESPERA SEMIACTIVA - capacidad ilimitada, solo verificar si está cerrado
-        synchronized (this) {
-            if (cerrado) {
-                throw new IllegalStateException("Buzón cerrado");
+        boolean depositado = false;
+        while (!depositado) {
+            synchronized (this) {
+                if (cerrado) {
+                    throw new IllegalStateException("Buzón cerrado");
+                }
+                cola.add(m);
+                System.out.println("[Buzon " + tipo.toString() + "]: Mensaje depositado -> " + 
+                                m.getTipo() + " de Cliente " + m.getIdCliente() + 
+                                " (ID: " + m.getIdMensaje() + ")");
+                notifyAll();
+                depositado = true;
             }
-            cola.add(m);
-            System.out.println("[Buzon " + tipo.toString() + "]: Mensaje depositado -> " + 
-                              m.getTipo() + " de Cliente " + m.getIdCliente() + 
-                              " (ID: " + m.getIdMensaje() + ")");
-            notifyAll();
+            if (!depositado) {
+                Thread.yield(); // Libera CPU fuera del synchronized
+            }
         }
     }
 
