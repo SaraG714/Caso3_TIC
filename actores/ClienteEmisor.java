@@ -6,17 +6,13 @@ public class ClienteEmisor extends Thread {
     private BuzonEntrada buzonEntrada;
     private int idCliente;
     private int totalMensajes;
-    private int mensajesGenerados;
 
     public ClienteEmisor(int idCliente, BuzonEntrada buzonEntrada, int totalMensajes) {
         this.idCliente = idCliente;
         this.buzonEntrada = buzonEntrada;
         this.totalMensajes = totalMensajes;
-        this.mensajesGenerados = 0;
         this.setName("Cliente-" + idCliente);
     }
-
-
 
     @Override
     public void run() {
@@ -38,7 +34,6 @@ public class ClienteEmisor extends Thread {
                 );
                 
                 buzonEntrada.depositar(mensaje);
-                mensajesGenerados++;
                 Thread.sleep((long) (Math.random() * 100));
             }
 
@@ -49,13 +44,5 @@ public class ClienteEmisor extends Thread {
             System.out.println(getName() + " interrumpido");
             Thread.currentThread().interrupt();
         }
-    }
-
-    public int getMensajesGenerados() {
-        return mensajesGenerados;
-    }
-
-    public int getIdCliente() {
-        return idCliente;
     }
 }

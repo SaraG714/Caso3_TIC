@@ -128,8 +128,4 @@ public class FiltroSpam extends Thread {
     public static boolean isSistemaCompletamenteTerminado() {
         return sistemaTerminado && finEnviado;
     }
-    
-    public static String getEstado() {
-        return "FINs: " + clientesTerminados.size() + ", sistemaTerminado: " + sistemaTerminado + ", finEnviado: " + finEnviado;
-    }
 }

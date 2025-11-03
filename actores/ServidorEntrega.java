@@ -6,13 +6,11 @@ import java.util.Random;
 
 public class ServidorEntrega extends Thread {
     private BuzonEntrega buzonEntrega;
-    private int idServidor;
     private volatile boolean terminado;
     private int mensajesProcesados;
     private static volatile boolean finGlobalRecibido = false;
 
     public ServidorEntrega(int idServidor, BuzonEntrega buzonEntrega) {
-        this.idServidor = idServidor;
         this.buzonEntrega = buzonEntrega;
         this.terminado = false;
         this.mensajesProcesados = 0;

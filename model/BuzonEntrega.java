@@ -43,7 +43,6 @@ public class BuzonEntrega extends Buzon {
                     return null;
                 }
             }
-            Thread.yield(); // Libera CPU fuera del synchronized
         }
     }
 }

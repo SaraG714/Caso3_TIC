@@ -16,12 +16,10 @@ public class Mensaje {
         this.tiempoCuarentena = 0;
     }
 
-    // Constructor para mensajes de control (INICIO/FIN)
     public Mensaje(Tipo tipo, String idCliente, int idMensaje) {
         this(tipo, idCliente, idMensaje, false);
     }
 
-    
     public int getIdMensaje() {
         return idMensaje;
     }
@@ -29,31 +27,11 @@ public class Mensaje {
         return tipo;
     }
     public String getIdCliente() {
-        return idCliente;       
-    }
-
-    public void setIdMensaje(int idMensaje) {
-        this.idMensaje = idMensaje;
-    }
-
-    public void setTipo(Tipo tipo) {
-        this.tipo = tipo;
-    }
-
-    public void setIdCliente(String idCliente) {
-        this.idCliente = idCliente;
+        return idCliente;
     }
 
     public boolean isEsSpam() {
         return esSpam;
-    }
-
-    public boolean getEsSpam() {
-        return esSpam;
-    }
-
-    public void setEsSpam(boolean esSpam) {
-        this.esSpam = esSpam;
     }
 
     public int getTiempoCuarentena() {
@@ -62,16 +40,5 @@ public class Mensaje {
 
     public void setTiempoCuarentena(int tiempoCuarentena) {
         this.tiempoCuarentena = tiempoCuarentena;
-    }
-
-    @Override
-    public String toString() {
-        return "Mensaje{" +
-                "tipo=" + tipo +
-                ", cliente='" + idCliente + '\'' +
-                ", id=" + idMensaje +
-                ", spam=" + esSpam +
-                ", cuarentena=" + tiempoCuarentena +
-                '}';
     }
 }
